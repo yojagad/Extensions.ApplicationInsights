@@ -5,6 +5,7 @@ using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Host.Config;
+using Newtonsoft.Json.Linq;
 
 namespace Extensions.ApplicationInsights
 {
@@ -18,14 +19,30 @@ namespace Extensions.ApplicationInsights
             _telemetryConfig = telemetryConfiguration;
         }
 
-        public void Initialize(ExtensionConfigContext context)
+        void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)
         {
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
 
-            context.AddBindingRule<ApplicationInsightsContextAttribute>()
+            context.AddConverter<JObject, ApplicationInsightsTag>(input => input.ToObject<ApplicationInsightsTag>());
+            context.AddConverter<ApplicationInsightsTag, JObject>(input => JObject.FromObject(input));
+
+            var rule = context.AddBindingRule<ApplicationInsightsContextAttribute>();
+
+            rule.BindToCollector(BuildCollector);
+
+            // rule.BindToInput<ApplicationInsightsTag>(new ApplicationInsightsTag { Id = Activity.Current.Id });
+            rule.BindToInput(BuildItemFromAttribute);
+
+            /*context.AddBindingRule<ApplicationInsightsContextAttribute>()
+                                .BindToCollector(BuildCollector);*/
+
+
+            // rule.BindToCollector(BuildCollector);
+
+            /*context.AddBindingRule<ApplicationInsightsContextAttribute>()
                 .AddConverter<ApplicationInsightsContext, IAsyncCollector<KeyValuePair<string, string>>>(c => c as IAsyncCollector<KeyValuePair<string, string>>)
                 .BindToCollector(_ =>
                  {
@@ -34,7 +51,20 @@ namespace Extensions.ApplicationInsights
                          InstrumentationKey = _telemetryConfig.InstrumentationKey,
                          OperationId = Activity.Current.Id
                      };
-                 });
+                 });*/
+        }
+
+        private ApplicationInsightsTag BuildItemFromAttribute(ApplicationInsightsContextAttribute arg)
+        {
+            return new ApplicationInsightsTag { Id = Activity.Current.Id, Tags = new List<Tag>() };
+        }
+
+        private IAsyncCollector<ApplicationInsightsTag> BuildCollector(ApplicationInsightsContextAttribute attribute)
+        {
+            return new ApplicationInsightsContext
+            {
+                InstrumentationKey = _telemetryConfig.InstrumentationKey,
+            };
         }
     }
 }

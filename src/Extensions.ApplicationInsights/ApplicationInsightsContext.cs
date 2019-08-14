@@ -1,20 +1,23 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 
 namespace Extensions.ApplicationInsights
 {
-    public class ApplicationInsightsContext : IAsyncCollector<KeyValuePair<string, string>>
+    public class ApplicationInsightsContext : IAsyncCollector<ApplicationInsightsTag>
     {
         public string InstrumentationKey { get; set; }
 
         public string OperationId { get; set; }
 
-        public Task AddAsync(KeyValuePair<string, string> item, CancellationToken cancellationToken = default)
+        public Task AddAsync(ApplicationInsightsTag item, CancellationToken cancellationToken = default)
         {
-            Activity.Current.AddTag(item.Key, item.Value);
+            foreach(Tag tag in item.Tags)
+            {
+                Activity.Current.AddTag(tag.Key, tag.Value);
+            }
+
             return Task.CompletedTask;
         }
 

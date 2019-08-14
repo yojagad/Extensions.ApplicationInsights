@@ -15,15 +15,18 @@ namespace Sample
     {
         [FunctionName("Function1")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
-            [ApplicationInsightsContext] IAsyncCollector<KeyValuePair<string, string>> appInsightsContext,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
+            [ApplicationInsightsContext] IAsyncCollector<ApplicationInsightsTag> appInsightsContext,
             ILogger log)
         {
             // TODO: Can we use a converter to prevent this?
-            ApplicationInsightsContext context = (ApplicationInsightsContext)appInsightsContext;
+            // ApplicationInsightsContext context = (ApplicationInsightsContext)appInsightsContext;
 
             // TODO: How would this work in other languages?
-            await context.AddAsync(new KeyValuePair<string, string>("MyContext", "ABC123"));
+            /*await appInsightsContext.AddAsync(new ApplicationInsightsTag{
+                Key = "MyContext",
+                Value = "123",
+            });*/
 
             log.LogInformation("C# HTTP trigger function processed a request.");
 
